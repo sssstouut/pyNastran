@@ -7757,6 +7757,22 @@ def dscmcol_dresp1(responses: dict[int, dict[str, Any]],
                         'subcase': subcase, 'freq': freq, 'randps': randps, 'seid': seid}
             #print(f'  grid={grid} comp={comp} subcase={subcase} freq={freq} '
                   #f'randps={randps} seid={seid} (PSD acceleration)')
+        elif response_type == 84:
+                # RTYPE=84 Aeroelastic flutter damping
+                #   4 SUBCASE I Subcase identification number
+                #   5 MODE I Mode number
+                #   6 DENSITY RS Density
+                #   7 MACH RS Mach number
+                #   8 VEL RS Velocity
+                #   9 SEID I Superelement identification number
+                subcase=ints[idata+3]
+                mode=ints[idata+4]
+                density=floats[idata+5]
+                mach=floats[idata+6]
+                vel=floats[idata+7]
+                seid=ints[idata+8]
+                response= {'name': 'aeroelastic flutter damping', 'subcase': subcase, 'mode': mode, 
+                            'density': density, 'mach': mach, 'vel': vel, 'seid': seid}
         else:  # pragma: no cover
             print(f'internal_response_id={internal_response_id} '
                   f'external_response_id={external_response_id} response_type={response_type}')
@@ -7768,7 +7784,6 @@ def dscmcol_dresp1(responses: dict[int, dict[str, Any]],
         response['response_number'] = 1
         responses[iresp] = response
         idata += 9
-    return
 
 def dscmcol_dresp2(responses: dict[int, dict[str, Any]],
                    nresponses_dresp2: int,

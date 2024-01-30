@@ -26,7 +26,7 @@ import sys
 from collections import defaultdict
 from pickle import load, dump, dumps
 from typing import Optional, Any, TYPE_CHECKING
-
+from scipy.io import FortranFile
 import numpy as np
 
 #import pyNastran
@@ -41,6 +41,7 @@ from pyNastran.op2.errors import (SortCodeError, DeviceCodeError,
 from pyNastran.op2.writer.op2_writer import OP2Writer
 #from pyNastran.op2.op2_interface.op2_f06_common import Op2F06Attributes
 from pyNastran.op2.op2_interface.types import NastranKey
+from pyNastran.op2.op2_interface.op2_reader import dscmcol_dresp1
 from pyNastran.op2.op2_interface.op2_scalar import OP2_Scalar
 from pyNastran.op2.op2_interface.transforms import (
     transform_displacement_to_global, transform_gpforce_to_globali)
@@ -565,57 +566,82 @@ class OP2(OP2_Scalar, OP2Writer):
         if op2_filename:
             check_path(op2_filename, name='op2_filename')
         mode = self.mode
-        if build_dataframe is None:
-            build_dataframe = False
-            if ipython_info():
-                build_dataframe = True
+       
+        if 'DSCMCOL'.lower() in op2_filename.lower():
+            responses={}
+            with FortranFile(op2_filename, 'r') as f:
+                ints = None
+                floats = None
+                while True:
+                    try:
+                        arr = f.read_reals(dtype='int')
+                        if len(arr) > 15:
+                            ints = arr
+                        
+                        arrf = f.read_reals(dtype='float32')
+                        if len(arrf) > 15:
+                            floats = arrf
+                    
+                    except:
+                        break
+            dscmcol_dresp1(responses,len(ints) // 9, ints, floats)
+            return responses
+        else:
+            if build_dataframe is None:
+                build_dataframe = False
+                if ipython_info():
+                    build_dataframe = True
 
-        if encoding is None:
-            encoding = sys.getdefaultencoding()
-        self.encoding = encoding
+            if encoding is None:
+                encoding = sys.getdefaultencoding()
+            self.encoding = encoding
 
-        self.skip_undefined_matrices = skip_undefined_matrices
-        assert self.ask in [True, False], self.ask
-        self.is_vectorized = True
-        self.log.debug(f'combine={combine}')
-        self.log.debug('-------- reading op2 with read_mode=1 (array sizing) --------')
-        self.read_mode = 1
-        self._close_op2 = False
+            self.skip_undefined_matrices = skip_undefined_matrices
+            assert self.ask in [True, False], self.ask
+            self.is_vectorized = True
+            self.log.debug(f'combine={combine}')
+            self.log.debug('-------- reading op2 with read_mode=1 (array sizing) --------')
+            self.read_mode = 1
+            self._close_op2 = False
 
-        load_as_h5 = False
-        if hasattr(self, 'load_as_h5'):
-            load_as_h5 = self.load_as_h5
+            load_as_h5 = False
+            if hasattr(self, 'load_as_h5'):
+                load_as_h5 = self.load_as_h5
 
-        try:
-            # get GUI object names, build objects, but don't read data
-            table_names = OP2_Scalar.read_op2(self, op2_filename=op2_filename,
-                                              load_as_h5=load_as_h5, mode=mode)
-            self.table_names = table_names
-
-            # TODO: stuff to figure out objects
-            # TODO: stuff to show gui of table names
-            # TODO: clear out objects the user doesn't want
-            self.read_mode = 2
-            self._close_op2 = True
-            self.log.debug('-------- reading op2 with read_mode=2 (array filling) --------')
-            op2_reader = self.op2_reader
-            _create_hdf5_info(self.op2_reader.h5_file, self)
-            OP2_Scalar.read_op2(self, op2_filename=self.op2_filename, mode=mode)
-        except FileNotFoundError:
-            raise
-        except Exception:
-            OP2_Scalar.close_op2(self, force=True)
-            raise
-        self._finalize()
-        op2_reader._create_objects_from_matrices()
-        if build_dataframe:
-            self.build_dataframe()
-        self.combine_results(combine=combine)
-        self.log.debug('finished reading op2')
-        str(self.op2_results)
-        if len(self.op2_results.thermal_load):
-            self.app = 'HEAT'
-
+            try:
+                # get GUI object names, build objects, but don't read data
+                if 'DSCMCOL'.lower() in op2_filename.lower():
+                    self.read_mode=2
+                else:
+                    table_names = OP2_Scalar.read_op2(self, op2_filename=op2_filename,
+                                                load_as_h5=load_as_h5, mode=mode)
+                    self.table_names = table_names
+                
+                # TODO: stuff to figure out objects
+                # TODO: stuff to show gui of table names
+                # TODO: clear out objects the user doesn't want
+                self.read_mode = 2
+                self._close_op2 = True
+                self.log.debug('-------- reading op2 with read_mode=2 (array filling) --------')
+                op2_reader = self.op2_reader
+                _create_hdf5_info(self.op2_reader.h5_file, self)
+                OP2_Scalar.read_op2(self, op2_filename=op2_filename, mode=mode)
+            except FileNotFoundError:
+                raise
+            except Exception:
+                OP2_Scalar.close_op2(self, force=True)
+                raise
+            self._finalize()
+            op2_reader._create_objects_from_matrices()
+            if build_dataframe:
+                self.build_dataframe()
+            self.combine_results(combine=combine)
+            self.log.debug('finished reading op2')
+            str(self.op2_results)
+            if len(self.op2_results.thermal_load):
+                self.app = 'HEAT'
+    
+    
     def _finalize(self) -> None:
         """internal method"""
         if hasattr(self, 'subcase'):
