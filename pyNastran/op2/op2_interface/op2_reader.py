@@ -7771,7 +7771,7 @@ def dscmcol_dresp1(responses: dict[int, dict[str, Any]],
                 mach=floats[idata+6]
                 vel=floats[idata+7]
                 seid=ints[idata+8]
-                response= {'name': 'aeroelastic flutter damping', 'subcase': subcase, 'mode': mode, 
+                response= {'name': 'aeroelastic flutter damping', 'subcase': subcase, 'mode': mode,
                             'density': density, 'mach': mach, 'vel': vel, 'seid': seid}
         else:  # pragma: no cover
             print(f'internal_response_id={internal_response_id} '

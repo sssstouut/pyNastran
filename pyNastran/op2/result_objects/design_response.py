@@ -453,6 +453,7 @@ class DSCMCOL:
             'buckling',
             '???', 'psd',
             '2',
+            'aeroelastic flutter damping',
         ]
         responses_groups = {key: [] for key in response_groups_order}
 
@@ -468,7 +469,7 @@ class DSCMCOL:
             'composite strain': 'static',
 
             'buckling': 'buckling',
-
+            'aeroelastic flutter damping':'aeroelastic flutter damping',
             'psd displacement': 'psd',
             'psd acceleration': 'psd',
 
@@ -505,6 +506,7 @@ class DSCMCOL:
             # ???
             'frequency response displacement': '???',
             'frequency response stress?': '???',
+            'aeroelastic flutter damping': 'FLUTTER'
         }
 
         for i, respi in self.responses.items():
@@ -572,6 +574,8 @@ class DSCMCOL:
                 msg += self._write_psd(ids, response_name_to_f06_response_type)
             elif group_name == '2':
                 msg += self._write_dresp2(ids)
+            elif group_name=='aeroelastic flutter damping':
+                pass
             else:
                 warnings.warn(f'skipping DSCMCOL group_name={group_name}')
                 for i in ids:

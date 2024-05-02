@@ -76,6 +76,7 @@ def _parse_nastran_version_8(data: bytes, version: bytes, encoding: str,
                              log) -> tuple[str, str]:
     """parses an 8 character version string"""
     version_str = version.strip().decode(encoding)
+    print(version)
     if version.startswith(b'NX'):
         mode = 'nx'
         version_str = version[2:].strip().decode(encoding)
@@ -98,6 +99,8 @@ def _parse_nastran_version_8(data: bytes, version: bytes, encoding: str,
         # C:\Users\Steve\Dropbox\pyNastran_examples\move_tpl\loadf.op2
         #log.warning('Assuming MSC Nastran')
         mode = 'msc'
+    elif version.startswith(b'DSCMCOL'):
+        mode='DSCMCOL'
     elif version in MSC_VERSIONS:
         mode = 'msc'
     #elif version in [b'XXXXXXXX']:

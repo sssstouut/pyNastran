@@ -28,7 +28,7 @@ from pickle import load, dump, dumps
 from typing import Optional, Any, TYPE_CHECKING
 from scipy.io import FortranFile
 import numpy as np
-
+import struct
 #import pyNastran
 from pyNastran.utils import (
     object_attributes, object_methods, ipython_info)
@@ -365,7 +365,7 @@ class OP2(OP2_Scalar, OP2Writer):
         """
         if mode.lower() == 'msc':
             self.set_as_msc()
-        elif mode.lower() == 'nx':
+        elif mode.lower() == 'nx' or mode.lower()== 'dscmcol':
             self.set_as_nx()
         elif mode.lower() == 'autodesk':
             self.set_as_autodesk()
@@ -566,27 +566,7 @@ class OP2(OP2_Scalar, OP2Writer):
         if op2_filename:
             check_path(op2_filename, name='op2_filename')
         mode = self.mode
-       
-        if 'DSCMCOL'.lower() in op2_filename.lower():
-            responses={}
-            with FortranFile(op2_filename, 'r') as f:
-                ints = None
-                floats = None
-                while True:
-                    try:
-                        arr = f.read_reals(dtype='int')
-                        if len(arr) > 15:
-                            ints = arr
-                        
-                        arrf = f.read_reals(dtype='float32')
-                        if len(arrf) > 15:
-                            floats = arrf
-                    
-                    except:
-                        break
-            dscmcol_dresp1(responses,len(ints) // 9, ints, floats)
-            return responses
-        else:
+        if True:
             if build_dataframe is None:
                 build_dataframe = False
                 if ipython_info():
@@ -610,13 +590,13 @@ class OP2(OP2_Scalar, OP2Writer):
 
             try:
                 # get GUI object names, build objects, but don't read data
-                if 'DSCMCOL'.lower() in op2_filename.lower():
-                    self.read_mode=2
-                else:
+                # if 'DSCMCOL'.lower() in op2_filename.lower():
+                #     self.read_mode=2
+                if True:
                     table_names = OP2_Scalar.read_op2(self, op2_filename=op2_filename,
                                                 load_as_h5=load_as_h5, mode=mode)
                     self.table_names = table_names
-                
+
                 # TODO: stuff to figure out objects
                 # TODO: stuff to show gui of table names
                 # TODO: clear out objects the user doesn't want
@@ -640,8 +620,8 @@ class OP2(OP2_Scalar, OP2Writer):
             str(self.op2_results)
             if len(self.op2_results.thermal_load):
                 self.app = 'HEAT'
-    
-    
+
+
     def _finalize(self) -> None:
         """internal method"""
         if hasattr(self, 'subcase'):
